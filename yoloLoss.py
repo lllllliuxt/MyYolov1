@@ -14,7 +14,7 @@ class yoloLoss(nn.Module):
         self.B = B
         self.l_coord = l_coord
         self.l_noobj = l_noobj
-
+    # 求交并比
     def compute_iou(self, box1, box2):
         '''Compute the intersection over union of two set of boxes, each box is [x1,y1,x2,y2].
         Args:
@@ -53,7 +53,9 @@ class yoloLoss(nn.Module):
         target_tensor: (tensor) size(batchsize,S,S,30)
         '''
         N = pred_tensor.size()[0]
+        # 包含物体 c
         coo_mask = target_tensor[:,:,:,4] > 0
+        # 不包含物体
         noo_mask = target_tensor[:,:,:,4] == 0
         coo_mask = coo_mask.unsqueeze(-1).expand_as(target_tensor)
         noo_mask = noo_mask.unsqueeze(-1).expand_as(target_tensor)

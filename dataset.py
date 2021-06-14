@@ -6,19 +6,15 @@
 txt描述文件 image_name.jpg x y w h c x y w h c 这样就是说一张图片中有两个目标
 '''
 import os
-import sys
 import os.path
-
 import random
-import numpy as np
-
-import torch
-import torch.utils.data as data
-import torchvision.transforms as transforms
 
 import cv2
-import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torch.utils.data as data
 
+# 类的作用是： 导入数据集并且进行数据增强
 class yoloDataset(data.Dataset):
     image_size = 448
     def __init__(self,root,list_file,train,transform):
@@ -26,8 +22,12 @@ class yoloDataset(data.Dataset):
         self.root=root
         self.train = train
         self.transform=transform
+
+        # 图片文件名
         self.fnames = []
+        # 窗口的四个坐标
         self.boxes = []
+        # 窗口中对象所属的类别
         self.labels = []
         self.mean = (123,117,104)#RGB
 
@@ -35,7 +35,7 @@ class yoloDataset(data.Dataset):
             # Cat multiple list files together.
             # This is especially useful for voc07/voc12 combination.
             tmp_file = '/tmp/listfile.txt'
-            os.system('cat %s > %s' % (' '.join(list_file), tmp_file))
+            os.system('cat %s > %s' %  (' '.join(list_file), tmp_file))
             list_file = tmp_file
 
         with open(list_file) as f:
@@ -88,6 +88,7 @@ class yoloDataset(data.Dataset):
         # plt.show()
         # #debug
         h,w,_ = img.shape
+        # 将box的值归一化，所以值的范围在0-1
         boxes /= torch.Tensor([w,h,w,h]).expand_as(boxes)
         img = self.BGR2RGB(img) #because pytorch pretrained model use RGB
         img = self.subMean(img,self.mean) #减去均值
@@ -100,19 +101,27 @@ class yoloDataset(data.Dataset):
     def __len__(self):
         return self.num_samples
 
+    # 将标记在图片上的窗口映射到7 * 7的大小中去
+    # 这个函数很重要
     def encoder(self,boxes,labels):
         '''
         boxes (tensor) [[x1,y1,x2,y2],[]]
         labels (tensor) [...]
         return 7x7x30
         '''
-        grid_num = 14
+        grid_num = 14 # 不应该是7嘛
         target = torch.zeros((grid_num,grid_num,30))
         cell_size = 1./grid_num
-        wh = boxes[:,2:]-boxes[:,:2]
-        cxcy = (boxes[:,2:]+boxes[:,:2])/2
+        wh = boxes[:,2:]-boxes[:,:2] # n * 2 [[w, h]]  w = x2 - x1 h = y2 - y1
+        cxcy = (boxes[:,2:]+boxes[:,:2])/2  # n * 2 [[cx, cy]] 四个点的中点坐标
+
+        # 多少个窗口
         for i in range(cxcy.size()[0]):
-            cxcy_sample = cxcy[i]
+            cxcy_sample = cxcy[i] # [cx, cy]
+            # cell_size = 1 / 14 ceil() 向上取整  floor() 向下取整
+            # 这句话的意思是计算出这个窗口属于哪个grid，也就是论文里面说的
+            # 物体的中心点落在了哪个grid中，那个grid负责预测这个物体。
+            # 没有映射的grid，长度为30的向量为0.
             ij = (cxcy_sample/cell_size).ceil()-1 #
             target[int(ij[1]),int(ij[0]),4] = 1
             target[int(ij[1]),int(ij[0]),9] = 1

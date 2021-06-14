@@ -4,7 +4,7 @@ import torch.utils.model_zoo as model_zoo
 import math
 import torch.nn.functional as F
 
-
+# 对外暴露接口的一种形式，将这些方法提供给外面
 __all__ = [
     'VGG', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn',
     'vgg19_bn', 'vgg19',

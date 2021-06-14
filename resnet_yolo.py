@@ -56,6 +56,7 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
+    # 每一层卷积核扩大多少倍
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
@@ -128,15 +129,23 @@ class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=1470):
         self.inplanes = 64
         super(ResNet, self).__init__()
+        # 第一层
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        # 包含两个残差块，一个残差块两层 共4 层
         self.layer1 = self._make_layer(block, 64, layers[0])
+        # 4 层
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        # 4 层
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        # 4 层
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+
+
+
         # self.layer5 = self._make_layer(block, 512, layers[3], stride=2)
         self.layer5 = self._make_detnet_layer(in_channels=2048)
         # self.avgpool = nn.AvgPool2d(14) #fit 448 input size
@@ -193,6 +202,7 @@ class ResNet(nn.Module):
         x = self.bn_end(x)
         x = F.sigmoid(x) #归一化到0-1
         # x = x.view(-1,7,7,30)
+        # 将tensor的维度进行换位
         x = x.permute(0,2,3,1) #(-1,7,7,30)
 
         return x
